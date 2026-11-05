@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Movie Booking</title>
+  <title>Movie Booking — Premium Cinemas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
   <div class="loader-inner">
     <div class="loader-logo">MOVIE BOOKING</div>
     <div class="loader-bar"><div class="loader-bar-fill"></div></div>
-    <div class="loader-sub">Calibrating Projection & Dolby Spatial Audio</div>
+    <div class="loader-sub">Calibrating Projection & Audio Engine</div>
   </div>
 </div>
 
@@ -33,21 +33,31 @@
       <a href="#home" class="nav-link active" data-section="home">Home</a>
       <a href="#movies" class="nav-link" data-section="movies">Now Showing</a>
       <a href="#cinemas" class="nav-link" data-section="cinemas">Cinemas</a>
-      <a href="#snacks" class="nav-link" data-section="snacks">Snacks</a>
       <a href="#coming" class="nav-link" data-section="coming">Coming Soon</a>
       <a href="#tickets" class="nav-link" data-section="tickets">My Passes <span id="ticketCountBadgeNav" class="ticket-badge hidden">0</span></a>
     </nav>
     <div class="header-actions">
-      <button class="icon-btn" id="soundscapeBtn" title="Toggle Dolby Binaural Soundscape" aria-label="Toggle Theater Audio">
+      <!-- Admin Notifications Bell -->
+      <button class="icon-btn admin-bell-btn" id="adminPanelBtn" title="Admin Notification Feed" aria-label="Admin Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
+        <span class="admin-badge-dot hidden" id="adminUnreadDot"></span>
+      </button>
+
+      <button class="icon-btn" id="soundscapeBtn" title="Toggle Dolby Ambient Audio" aria-label="Toggle Audio">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path class="sound-wave" d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path class="sound-wave" d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
       </button>
-      <button class="icon-btn" id="dimmerBtn" title="Toggle Theater Ambient Lights" aria-label="Toggle Theater Lights">
+
+      <button class="icon-btn" id="dimmerBtn" title="Toggle Theater Ambient Lights" aria-label="Toggle Lights">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       </button>
+
       <button class="icon-btn" id="searchToggle" aria-label="Search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
-      <button class="btn btn-ghost" id="vipClubBtn">VIP Club</button>
+
       <button class="hamburger" id="hamburger" aria-label="Toggle Menu">
         <span></span><span></span><span></span>
       </button>
@@ -74,13 +84,9 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
     <span>Showing</span>
   </a>
-  <a href="#snacks" class="mobile-nav-item" data-section="snacks">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v20"/><path d="M18 2v20"/><path d="M6 12h12"/></svg>
-    <span>Snacks</span>
-  </a>
   <a href="#cinemas" class="mobile-nav-item" data-section="cinemas">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-    <span>Theaters</span>
+    <span>Branches</span>
   </a>
   <a href="#tickets" class="mobile-nav-item" data-section="tickets">
     <div class="mobile-nav-badge-wrap">
@@ -121,8 +127,7 @@
       </p>
 
       <div class="hero-pricing-box anim-item">
-        <div class="price-chip"><span>Regular Seat:</span> <strong>₱320</strong></div>
-        <div class="price-chip vip"><span>VIP Recliner:</span> <strong>₱480</strong></div>
+        <div class="price-chip"><span>Ticket Price:</span> <strong id="heroPriceTag">₱320</strong></div>
       </div>
 
       <div class="hero-actions anim-item">
@@ -149,7 +154,7 @@
       <div class="section-title-wrap">
         <div class="eyebrow">SCREENING SCHEDULE</div>
         <h2 class="section-title">Now Showing</h2>
-        <p class="section-subtitle">Laser 4K Christie® projection with uncompressed Dolby Atmos® spatial audio.</p>
+        <p class="section-subtitle">Laser 4K projection with crystal uncompressed Dolby Atmos spatial sound.</p>
       </div>
       <div class="filters-scroll-wrap">
         <div class="filters" id="filters">
@@ -176,59 +181,46 @@
   </div>
 </section>
 
-<section id="snacks" class="section section-alt">
+<section id="cinemas" class="section section-alt">
   <div class="container">
     <div class="section-head">
       <div class="section-title-wrap">
-        <div class="eyebrow">MOVIE BOOKING CONCESSIONS</div>
-        <h2 class="section-title">Gourmet In-Seat Treats</h2>
-        <p class="section-subtitle">Artisan cinema snacks and chilled beverages delivered straight to your recliner.</p>
-      </div>
-    </div>
-    <div class="snacks-grid" id="snacksPreviewGrid"></div>
-  </div>
-</section>
-
-<section id="cinemas" class="section">
-  <div class="container">
-    <div class="section-head">
-      <div class="section-title-wrap">
-        <div class="eyebrow">PREMIUM VENUES</div>
-        <h2 class="section-title">Our Auditoriums</h2>
-        <p class="section-subtitle">Motorized leather loungers, 64-channel spatial sound, and private concierge suites.</p>
+        <div class="eyebrow">CINEMA BRANCHES</div>
+        <h2 class="section-title">Auditoriums & Weekly Schedule</h2>
+        <p class="section-subtitle">Check operating screening days and theater formats per location.</p>
       </div>
     </div>
     <div class="cinemas-grid" id="cinemasGrid"></div>
   </div>
 </section>
 
-<section id="coming" class="section section-alt">
+<section id="coming" class="section">
   <div class="container">
     <div class="section-head">
       <div class="section-title-wrap">
         <div class="eyebrow">ADVANCE PREVIEWS</div>
         <h2 class="section-title">Coming Soon</h2>
-        <p class="section-subtitle">Set instant reminders for upcoming blockbuster releases and red carpet festivals.</p>
+        <p class="section-subtitle">Set notifications for upcoming releases and advance ticket windows.</p>
       </div>
     </div>
     <div class="coming-grid" id="comingGrid"></div>
   </div>
 </section>
 
-<section id="tickets" class="section">
+<section id="tickets" class="section section-alt">
   <div class="container">
     <div class="section-head">
       <div class="section-title-wrap">
-        <div class="eyebrow">DIGITAL WALLET</div>
+        <div class="eyebrow">DIGITAL PASS WALLET</div>
         <h2 class="section-title">My Passes</h2>
-        <p class="section-subtitle">Present your digital QR barcode at entrance turnstiles. Supports offline wallet download.</p>
+        <p class="section-subtitle">Present this QR pass at the entrance scanner turnstiles.</p>
       </div>
     </div>
     <div class="tickets-grid" id="ticketsGrid"></div>
     <div class="empty-state hidden" id="ticketsEmpty">
       <div class="empty-icon">🎟️</div>
       <h3>No Active Booking Passes</h3>
-      <p>Reserve a movie above and your passes and snack receipts will appear here.</p>
+      <p>Reserve a movie above and your verified ticket passes will appear here.</p>
     </div>
   </div>
 </section>
@@ -237,9 +229,9 @@
   <div class="footer-top container">
     <div class="newsletter-card">
       <div class="newsletter-content">
-        <span class="eyebrow">MOVIE BOOKING EXCLUSIVES</span>
+        <span class="eyebrow">EXCLUSIVE ALERTS</span>
         <h3 class="newsletter-title">Receive Invitations to Premieres</h3>
-        <p class="newsletter-sub">Get advance reservation windows, director's cut passes, and monthly concession perks.</p>
+        <p class="newsletter-sub">Get advance notifications when booking windows open for blockbuster releases.</p>
       </div>
       <form class="newsletter-form" id="newsletterForm">
         <input type="email" id="newsletterEmail" placeholder="Enter your email address..." required />
@@ -255,42 +247,33 @@
         <span class="logo-text">MOVIE BOOKING</span>
       </div>
       <p class="brand-tagline">
-        Elevating the cinematic experience with motorized zero-gravity recliner halls, signature concierge culinary service, and acoustic master-tuning.
+        Delivering seamless movie ticket booking across premium theaters with instant seat confirmation and digital passes.
       </p>
-      <div class="concierge-status">
-        <span class="status-indicator"></span>
-        <span>Concierge Desk: <strong>Live & Online</strong> (9 AM – 1 AM)</span>
-      </div>
     </div>
 
     <div class="footer-col">
       <h4>Navigation</h4>
-      <a href="#home">Home Showcase</a>
+      <a href="#home">Home</a>
       <a href="#movies">Now Showing</a>
-      <a href="#snacks">Gourmet Snack Menu</a>
-      <a href="#cinemas">Auditorium Specs</a>
+      <a href="#cinemas">Cinema Branches</a>
       <a href="#coming">Advance Premieres</a>
       <a href="#tickets">My Booking Passes</a>
     </div>
 
     <div class="footer-col">
       <h4>Experiences</h4>
-      <a href="#cinemas">VIP Director’s Suite</a>
-      <a href="#cinemas">IMAX 4K Laser Cinema</a>
-      <a href="#cinemas">Dolby Atmos Hall</a>
-      <a href="#">D-BOX Motion Chairs</a>
-      <a href="#">Private Screenings & Hire</a>
-      <a href="#">Midnight Premiere Club</a>
+      <a href="#cinemas">IMAX Laser Halls</a>
+      <a href="#cinemas">Dolby Atmos Audio</a>
+      <a href="#cinemas">Barco 4K Projection</a>
+      <a href="#">Private Screenings</a>
     </div>
 
     <div class="footer-col">
-      <h4>Guest Concierge</h4>
-      <a href="#">Priority Reservations</a>
-      <a href="#">Instant Cancellation & Credit</a>
-      <a href="#">In-Seat Dining Service</a>
-      <a href="#">Corporate Event Booking</a>
-      <a href="#">Lost & Found Desk</a>
-      <a href="#">Assistive Listening Audio</a>
+      <h4>Support & Privacy</h4>
+      <a href="#">Instant Cancellation Policy</a>
+      <a href="#">Booking FAQs</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Privacy Guarantee</a>
     </div>
   </div>
 
@@ -305,43 +288,12 @@
         <span class="ptag">Visa</span>
         <span class="ptag">Mastercard</span>
         <span class="ptag">Apple Pay</span>
-        <span class="ptag">GrabPay</span>
       </div>
     </div>
   </div>
 </footer>
 
-<div class="modal" id="vipModal">
-  <div class="modal-backdrop"></div>
-  <div class="modal-content modal-vip">
-    <button class="modal-close" data-close aria-label="Close">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
-    <div class="vip-card-wrap">
-      <div class="vip-card-holo">
-        <div class="vip-card-head">
-          <span class="vip-gold-brand">MOVIE BOOKING VIP</span>
-          <span class="vip-tier-tag">BLACK DIAMOND</span>
-        </div>
-        <div class="vip-card-chip"></div>
-        <div class="vip-card-body">
-          <div class="vip-card-num">•••• •••• •••• 8899</div>
-          <div class="vip-card-name">VALUED CINEPHILE MEMBER</div>
-        </div>
-        <div class="vip-card-footer">
-          <span>Concierge Desk: <strong>#888-BOOK</strong></span>
-          <span>Complimentary Truffle Popcorn</span>
-        </div>
-      </div>
-    </div>
-    <div class="vip-perks-list">
-      <div class="vip-perk-item">✓ Unlimited Recliner Lounge Access</div>
-      <div class="vip-perk-item">✓ 20% Instant Concession Savings (Code: <strong>VIPLUXE</strong>)</div>
-      <div class="vip-perk-item">✓ 15-Minute Advance Seat Locking Priority</div>
-    </div>
-  </div>
-</div>
-
+<!-- Movie Details Modal -->
 <div class="modal" id="movieModal">
   <div class="modal-backdrop"></div>
   <div class="modal-content modal-movie">
@@ -352,6 +304,7 @@
   </div>
 </div>
 
+<!-- Trailer Modal -->
 <div class="modal" id="trailerModal">
   <div class="modal-backdrop"></div>
   <div class="modal-content modal-trailer">
@@ -362,6 +315,7 @@
   </div>
 </div>
 
+<!-- Streamlined Booking Modal (5 Steps) -->
 <div class="modal" id="bookingModal">
   <div class="modal-backdrop"></div>
   <div class="modal-content modal-booking">
@@ -371,7 +325,7 @@
 
     <div class="seat-timer-banner hidden" id="seatTimerBanner">
       <span>🔒 Seats temporarily held for your reservation:</span>
-      <strong id="seatCountdown">09:59</strong>
+      <strong id="seatCountdown">10:00</strong>
     </div>
 
     <div class="booking-progress-wrap">
@@ -383,12 +337,12 @@
         <div class="progress-line"></div>
         <div class="progress-step" data-step="2">
           <span class="step-num">2</span>
-          <span class="step-txt">Venue</span>
+          <span class="step-txt">Branch</span>
         </div>
         <div class="progress-line"></div>
         <div class="progress-step" data-step="3">
           <span class="step-num">3</span>
-          <span class="step-txt">Time</span>
+          <span class="step-txt">Mon–Sun</span>
         </div>
         <div class="progress-line"></div>
         <div class="progress-step" data-step="4">
@@ -398,12 +352,7 @@
         <div class="progress-line"></div>
         <div class="progress-step" data-step="5">
           <span class="step-num">5</span>
-          <span class="step-txt">Snacks</span>
-        </div>
-        <div class="progress-line"></div>
-        <div class="progress-step" data-step="6">
-          <span class="step-num">6</span>
-          <span class="step-txt">Pay</span>
+          <span class="step-txt">Checkout</span>
         </div>
       </div>
     </div>
@@ -412,6 +361,7 @@
   </div>
 </div>
 
+<!-- User Booking Confirmation Modal -->
 <div class="modal" id="confirmModal">
   <div class="modal-backdrop"></div>
   <div class="modal-content modal-confirm">
@@ -419,6 +369,39 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
     <div id="confirmInner"></div>
+  </div>
+</div>
+
+<!-- Admin Notification & Audit Feed Modal -->
+<div class="modal" id="adminModal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content modal-admin">
+    <button class="modal-close" data-close aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="admin-panel-head">
+      <div class="admin-tag">ADMIN AUDIT CONSOLE</div>
+      <h2>Real-Time Booking Log</h2>
+      <p>Live stream of incoming seat reservations, customer receipts, and cinema turnstile validations.</p>
+    </div>
+
+    <div class="admin-metrics-row">
+      <div class="metric-card">
+        <span class="metric-label">Total Bookings</span>
+        <strong class="metric-val" id="adminTotalBookings">0</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Seats Reserved</span>
+        <strong class="metric-val" id="adminTotalSeats">0</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Gross Revenue</span>
+        <strong class="metric-val" id="adminTotalRevenue">₱0</strong>
+      </div>
+    </div>
+
+    <div class="admin-feed-title">Incoming Transaction Logs</div>
+    <div class="admin-feed-list" id="adminNotificationList"></div>
   </div>
 </div>
 
