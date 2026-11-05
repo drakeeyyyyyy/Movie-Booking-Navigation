@@ -93,7 +93,7 @@ const MOVIES = [
 
 const HERO_FEATURED = [MOVIES[0], MOVIES[1], MOVIES[4], MOVIES[2]];
 
-// CINEMAS with explicit Day of Week availability (1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun)
+// CINEMAS with weekly operational schedule (1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun)
 const CINEMAS = [
   {
     id: 1,
@@ -101,7 +101,6 @@ const CINEMAS = [
     location: "BGC High Street, Taguig",
     screens: 12,
     features: ["IMAX Laser", "Dolby Atmos", "Laser Projection"],
-    // Available: Mon, Tue, Wed, Thu, Fri, Sat, Sun (Daily)
     availableDays: [1, 2, 3, 4, 5, 6, 0],
     statusText: "Open All Week"
   },
@@ -110,9 +109,8 @@ const CINEMAS = [
     name: "Movie Booking Grand Luxe",
     location: "Rockwell Center, Makati",
     screens: 8,
-    features: ["4K Sound", "Laser Projection", "Club Bar"],
-    // Maintenance on Tuesdays
-    availableDays: [1, 3, 4, 5, 6, 0],
+    features: ["4K Sound", "Laser Projection"],
+    availableDays: [1, 3, 4, 5, 6, 0], // Closed Tuesdays
     statusText: "Closed Tuesdays"
   },
   {
@@ -121,8 +119,7 @@ const CINEMAS = [
     location: "Greenhills, San Juan",
     screens: 6,
     features: ["Laser Projection", "Dolby Atmos"],
-    // Weekday & Weekend (Closed Wednesdays)
-    availableDays: [1, 2, 4, 5, 6, 0],
+    availableDays: [1, 2, 4, 5, 6, 0], // Closed Wednesdays
     statusText: "Closed Wednesdays"
   },
   {
@@ -131,8 +128,7 @@ const CINEMAS = [
     location: "Mall of Asia, Pasay",
     screens: 10,
     features: ["Giant IMAX", "Barco 4K", "Dolby Atmos"],
-    // Available: Thursday through Sunday
-    availableDays: [4, 5, 6, 0],
+    availableDays: [4, 5, 6, 0], // Thursday through Sunday
     statusText: "Thu–Sun Only"
   }
 ];
@@ -164,6 +160,7 @@ const state = {
   soundscapeActive: false,
   audioCtx: null,
   droneNodes: null,
+  isAdminLoggedIn: false,
   favorites: JSON.parse(localStorage.getItem("moviebooking_favorites") || "[]"),
   booking: {
     movie: null,
@@ -177,8 +174,7 @@ const state = {
     holdTimerInterval: null,
     secondsLeft: 600
   },
-  tickets: JSON.parse(localStorage.getItem("moviebooking_tickets") || "[]"),
-  adminNotifications: JSON.parse(localStorage.getItem("moviebooking_admin_notifications") || "[]")
+  tickets: JSON.parse(localStorage.getItem("moviebooking_tickets") || "[]")
 };
 
 const $ = sel => document.querySelector(sel);
@@ -231,19 +227,6 @@ function playUiSound(type = 'click') {
         osc.start(ctx.currentTime + (i * 0.08));
         osc.stop(ctx.currentTime + (i * 0.08) + 0.35);
       });
-    } else if (type === 'admin') {
-      [880, 1174.66].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + (i * 0.1));
-        gain.gain.setValueAtTime(0.12, ctx.currentTime + (i * 0.1));
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (i * 0.1) + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + (i * 0.1));
-        osc.stop(ctx.currentTime + (i * 0.1) + 0.25);
-      });
     }
   } catch (e) {}
 }
@@ -255,8 +238,6 @@ function toast(msg, type = 'info') {
     ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>'
     : type === 'error'
     ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>'
-    : type === 'admin'
-    ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>'
     : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>';
 
   t.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-msg">${msg}</div>`;
@@ -264,10 +245,10 @@ function toast(msg, type = 'info') {
   setTimeout(() => {
     t.classList.add('out');
     setTimeout(() => t.remove(), 300);
-  }, 3400);
+  }, 3200);
 }
 
-// Full Monday to Sunday Week Generator
+// Full Monday to Sunday Calendar Helper
 function getMondayToSundayWeek() {
   const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const daysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -275,9 +256,7 @@ function getMondayToSundayWeek() {
   const monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const now = new Date();
-  const currentDayOfWeek = now.getDay(); // 0 is Sun, 1 is Mon...
-  
-  // Find Monday of the current screening week (ISO standard: Mon = start)
+  const currentDayOfWeek = now.getDay();
   const distanceToMonday = (currentDayOfWeek + 6) % 7; 
   const mondayDate = new Date(now);
   mondayDate.setDate(now.getDate() - distanceToMonday);
@@ -288,30 +267,23 @@ function getMondayToSundayWeek() {
     d.setDate(mondayDate.getDate() + i);
 
     const dayIdx = d.getDay();
-    const day = daysShort[dayIdx];
-    const dayFull = daysFull[dayIdx];
-    const month = months[d.getMonth()];
-    const monthFull = monthsFull[d.getMonth()];
-    const num = d.getDate();
-    const year = d.getFullYear();
-
     week.push({
-      dayIndex: dayIdx, // 0 to 6
-      day,
-      dayFull,
-      month,
-      monthFull,
-      num,
-      year,
+      dayIndex: dayIdx,
+      day: daysShort[dayIdx],
+      dayFull: daysFull[dayIdx],
+      month: months[d.getMonth()],
+      monthFull: monthsFull[d.getMonth()],
+      num: d.getDate(),
+      year: d.getFullYear(),
       iso: d.toISOString().slice(0, 10),
-      shortDate: `${month} ${num}, ${year}`,
-      formattedDate: `${monthFull} ${num}, ${year}`
+      shortDate: `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+      formattedDate: `${monthsFull[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
     });
   }
   return week;
 }
 
-// Hero Carousel
+// Hero
 function renderHeroIndicators() {
   const c = $('#heroIndicators');
   c.innerHTML = HERO_FEATURED.map((_, i) => `
@@ -487,15 +459,17 @@ $$('.filter').forEach(f => f.addEventListener('click', () => {
   renderMovies();
 }));
 
-// Modal Controls
+// Robust Modal Management (Fixed "X" Button Handling)
 function openModal(id) {
   const m = document.getElementById(id);
+  if (!m) return;
   m.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal(id) {
   const m = document.getElementById(id);
+  if (!m) return;
   m.classList.remove('open');
   document.body.style.overflow = '';
   if (id === 'trailerModal') $('#trailerWrapper').innerHTML = '';
@@ -504,15 +478,23 @@ function closeModal(id) {
   }
 }
 
+// Document-wide delegated listener using .closest() so clicks on SVG/paths ALWAYS close the modal
 document.addEventListener('click', e => {
-  if (e.target.matches('[data-close]') || e.target.classList.contains('modal-backdrop')) {
+  const closeBtn = e.target.closest('[data-close]');
+  const isBackdrop = e.target.classList.contains('modal-backdrop');
+
+  if (closeBtn || isBackdrop) {
     haptic(10);
-    $$('.modal.open').forEach(m => closeModal(m.id));
+    playUiSound('click');
+    const openModals = document.querySelectorAll('.modal.open');
+    openModals.forEach(m => closeModal(m.id));
   }
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') $$('.modal.open').forEach(m => closeModal(m.id));
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id));
+  }
 });
 
 function openTrailer(m) {
@@ -572,7 +554,7 @@ function openMovieModal(m) {
   });
 }
 
-// Seat Reservation Hold Timer
+// Seat Reservation Timer
 function startSeatHoldTimer() {
   clearInterval(state.booking.holdTimerInterval);
   state.booking.secondsLeft = 600;
@@ -588,7 +570,7 @@ function startSeatHoldTimer() {
 
     if (state.booking.secondsLeft <= 0) {
       clearInterval(state.booking.holdTimerInterval);
-      toast('Seat hold reservation expired.', 'error');
+      toast('Seat reservation window expired.', 'error');
       closeModal('bookingModal');
     }
   }, 1000);
@@ -598,7 +580,6 @@ function startSeatHoldTimer() {
 function openBooking(movie) {
   const week = getMondayToSundayWeek();
   const defaultCinema = CINEMAS[0];
-  // Find first available day for this branch
   const firstAvailDate = week.find(d => defaultCinema.availableDays.includes(d.dayIndex)) || week[0];
 
   state.booking = {
@@ -641,7 +622,7 @@ function renderBookingStep() {
   else if (b.step === 5) renderStep5(body);
 }
 
-// Step 1: Movie Confirmation
+// Step 1: Movie Details
 function renderStep1(body) {
   const m = state.booking.movie;
   body.innerHTML = `
@@ -674,7 +655,7 @@ function renderStep1(body) {
   });
 }
 
-// Step 2: Branch Selection WITH DATE AVAILABILITY
+// Step 2: Branch Selection with Date Availability Preview
 function renderStep2(body) {
   const weekDaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -734,7 +715,6 @@ function renderStep2(body) {
       const selectedCinema = CINEMAS.find(c => c.id == card.dataset.cid);
       state.booking.cinema = selectedCinema;
 
-      // Adjust current date if not available for this cinema
       const week = getMondayToSundayWeek();
       if (!selectedCinema.availableDays.includes(state.booking.date?.dayIndex)) {
         state.booking.date = week.find(d => selectedCinema.availableDays.includes(d.dayIndex)) || week[0];
@@ -751,7 +731,6 @@ function renderStep3(body) {
   const cinema = state.booking.cinema || CINEMAS[0];
   const week = getMondayToSundayWeek();
 
-  // Ensure selected date is valid
   if (!state.booking.date || !cinema.availableDays.includes(state.booking.date.dayIndex)) {
     state.booking.date = week.find(d => cinema.availableDays.includes(d.dayIndex)) || week[0];
   }
@@ -970,7 +949,7 @@ function renderSummaryHtml() {
   `;
 }
 
-// Step 5: Checkout & Payment
+// Step 5: Checkout
 function renderStep5(body) {
   const b = state.booking;
   const { total } = calculateTotal();
@@ -1067,7 +1046,7 @@ function renderPaymentFields(method) {
         <label class="form-label">${method === 'gcash' ? 'GCash' : 'Maya'} Registered Mobile</label>
         <input type="tel" class="form-input" placeholder="09XX XXX XXXX" value="0917 888 1234" />
       </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">One-Time Pin (OTP) will be dispatched instantly.</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">One-Time Pin (OTP) will be dispatched instantly via SMS.</p>
     `;
   } else if (method === 'card') {
     return `
@@ -1107,10 +1086,10 @@ function processPayment() {
 
   setTimeout(() => {
     confirmBooking();
-  }, 1000);
+  }, 950);
 }
 
-// User and Admin Dual Notification Confirmation
+// User-Only Confirmation (Admin is completely isolated)
 function confirmBooking() {
   const b = state.booking;
   const { total } = calculateTotal();
@@ -1132,41 +1111,18 @@ function confirmBooking() {
     bookedAt: Date.now()
   };
 
-  // 1. Save to User Wallet
   state.tickets.unshift(ticket);
   localStorage.setItem('moviebooking_tickets', JSON.stringify(state.tickets));
-
-  // 2. Dispatch to Admin Notification System
-  const adminNotif = {
-    id: 'ADM-' + Date.now().toString().slice(-6),
-    ref: ticket.ref,
-    movie: ticket.movie,
-    cinema: ticket.cinema,
-    seats: ticket.seats,
-    qty: ticket.qty,
-    total: ticket.total,
-    timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-
-  state.adminNotifications.unshift(adminNotif);
-  localStorage.setItem('moviebooking_admin_notifications', JSON.stringify(state.adminNotifications));
 
   closeModal('bookingModal');
   playUiSound('success');
 
-  // Trigger User and Admin Notifications
+  // Customer confirmation only
   setTimeout(() => {
     showConfirmationModal(ticket);
     renderTickets();
-    updateAdminMetrics();
-
-    // Show Admin Real-Time Notification Banner
-    setTimeout(() => {
-      playUiSound('admin');
-      $('#adminUnreadDot').classList.remove('hidden');
-      toast(`⚡ ADMIN NOTICE: Reserved ${ticket.seats} for "${ticket.movie}" (${formatPeso(ticket.total)})`, 'admin');
-    }, 1200);
-  }, 200);
+    toast('Reservation confirmed! Pass added to wallet.', 'success');
+  }, 150);
 }
 
 function showConfirmationModal(t) {
@@ -1175,12 +1131,7 @@ function showConfirmationModal(t) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
     <h2 class="confirm-title">Reservation Confirmed!</h2>
-    <p class="confirm-sub">Your digital ticket pass has been added to your pass wallet.</p>
-
-    <div class="notification-sync-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <span>Customer SMS & Admin Central Database Dispatched</span>
-    </div>
+    <p class="confirm-sub">Your digital ticket pass is active in your pass wallet.</p>
 
     <div class="confirm-ticket">
       <div class="confirm-ticket-row"><span>Movie</span><span>${t.movie}</span></div>
@@ -1213,8 +1164,6 @@ function showConfirmationModal(t) {
     closeModal('confirmModal');
     document.getElementById('tickets').scrollIntoView({ behavior: 'smooth' });
   });
-
-  toast("Pass saved to wallet!", 'success');
 }
 
 // User Ticket Wallet
@@ -1290,47 +1239,12 @@ function renderTickets() {
             state.tickets = state.tickets.filter(x => x.ref !== ref);
             localStorage.setItem('moviebooking_tickets', JSON.stringify(state.tickets));
             renderTickets();
-            toast('Pass cancelled and refund initiated.', 'error');
+            toast('Pass cancelled and refund issued.', 'error');
           }
         }
       });
     });
   });
-}
-
-// Admin Audit Feed & Metrics
-function updateAdminMetrics() {
-  const notifs = state.adminNotifications;
-  const totalBookings = notifs.length;
-  const totalSeats = notifs.reduce((sum, n) => sum + (n.qty || 1), 0);
-  const totalRev = notifs.reduce((sum, n) => sum + (n.total || 0), 0);
-
-  const tb = $('#adminTotalBookings');
-  const ts = $('#adminTotalSeats');
-  const tr = $('#adminTotalRevenue');
-  if (tb) tb.textContent = totalBookings;
-  if (ts) ts.textContent = totalSeats;
-  if (tr) tr.textContent = formatPeso(totalRev);
-
-  const feedList = $('#adminNotificationList');
-  if (feedList) {
-    if (notifs.length === 0) {
-      feedList.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px">No transactions recorded yet.</div>`;
-    } else {
-      feedList.innerHTML = notifs.map(n => `
-        <div class="admin-feed-item">
-          <div class="admin-feed-main">
-            <strong>${n.movie}</strong>
-            <div class="admin-feed-meta">${n.cinema} • Seats: <strong>${n.seats}</strong> • Ref: ${n.ref}</div>
-          </div>
-          <div>
-            <div class="admin-feed-price">${formatPeso(n.total)}</div>
-            <div class="admin-feed-time">${n.timeString}</div>
-          </div>
-        </div>
-      `).join('');
-    }
-  }
 }
 
 // Cinema Branches Showcase
@@ -1449,7 +1363,142 @@ function toggleSoundscape() {
   }
 }
 
-// Event Listeners
+// ================= DEDICATED ADMIN PORTAL LOGIC =================
+
+function openAdminPortal() {
+  state.isAdminLoggedIn = true;
+  $('#publicSite').classList.add('hidden');
+  $('#adminPortalView').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  renderAdminDashboard();
+}
+
+function exitAdminPortal() {
+  state.isAdminLoggedIn = false;
+  $('#adminPortalView').classList.add('hidden');
+  $('#publicSite').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function renderAdminDashboard() {
+  const tickets = state.tickets;
+  const totalRev = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
+  const totalSeats = tickets.reduce((sum, t) => sum + (t.qty || 1), 0);
+
+  $('#kpiGrossRevenue').textContent = formatPeso(totalRev);
+  $('#kpiTotalBookings').textContent = tickets.length;
+  $('#kpiTotalSeats').textContent = totalSeats;
+  $('#kpiActiveBranches').textContent = CINEMAS.length;
+
+  filterAdminTable();
+}
+
+function filterAdminTable() {
+  const query = ($('#adminBookingSearch')?.value || '').toLowerCase().trim();
+  const branchFilter = $('#adminBranchFilter')?.value || 'all';
+
+  const filtered = state.tickets.filter(t => {
+    const matchQuery = !query || 
+      t.ref.toLowerCase().includes(query) || 
+      t.movie.toLowerCase().includes(query) || 
+      t.cinema.toLowerCase().includes(query) || 
+      t.seats.toLowerCase().includes(query);
+
+    const matchBranch = branchFilter === 'all' || t.cinema.includes(branchFilter);
+    return matchQuery && matchBranch;
+  });
+
+  const tbody = $('#adminBookingsTableBody');
+  const empty = $('#adminEmptyTable');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = filtered.map(t => `
+    <tr>
+      <td><span class="pass-id-chip">${t.ref}</span></td>
+      <td><strong>${t.movie}</strong></td>
+      <td>${t.cinema}</td>
+      <td>${t.date} • ${t.time}</td>
+      <td><span class="seat-chip">${t.seats}</span> (${t.qty}x)</td>
+      <td><span class="badge" style="color:#60a5fa;border-color:rgba(96,165,250,0.3)">${t.paymentMethod}</span></td>
+      <td><strong style="color:var(--accent)">${formatPeso(t.total)}</strong></td>
+      <td style="text-align:right">
+        <button class="btn-table-action" data-void-ref="${t.ref}">Void / Refund</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('[data-void-ref]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ref = btn.dataset.voidRef;
+      if (confirm(`Manager Action: Void pass ${ref} and issue customer refund?`)) {
+        haptic(15);
+        state.tickets = state.tickets.filter(t => t.ref !== ref);
+        localStorage.setItem('moviebooking_tickets', JSON.stringify(state.tickets));
+        renderAdminDashboard();
+        renderTickets();
+        toast(`Pass ${ref} voided and refund processed.`, 'error');
+      }
+    });
+  });
+}
+
+// Staff Portal Login Form
+$('#adminLoginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const user = $('#adminUsernameInput').value.trim();
+  const pass = $('#adminPasswordInput').value.trim();
+
+  if (user === 'admin' && pass === 'cinema2026') {
+    haptic(20);
+    playUiSound('success');
+    closeModal('adminLoginModal');
+    $('#adminUsernameInput').value = '';
+    $('#adminPasswordInput').value = '';
+    toast('Admin authorized. Entering Operations Console...', 'success');
+    setTimeout(openAdminPortal, 250);
+  } else {
+    haptic(30);
+    toast('Invalid admin credentials. Check demo hint.', 'error');
+  }
+});
+
+$('#fillDemoCredentialsBtn').addEventListener('click', () => {
+  $('#adminUsernameInput').value = 'admin';
+  $('#adminPasswordInput').value = 'cinema2026';
+});
+
+$('#staffPortalBtn').addEventListener('click', () => {
+  haptic(10);
+  openModal('adminLoginModal');
+});
+
+$('#footerStaffLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  haptic(10);
+  openModal('adminLoginModal');
+});
+
+$('#adminExitBtn').addEventListener('click', () => {
+  haptic(10);
+  exitAdminPortal();
+});
+
+$('#adminRefreshBtn').addEventListener('click', () => {
+  haptic(10);
+  renderAdminDashboard();
+  toast('Admin telemetry synchronized.', 'success');
+});
+
+$('#adminBookingSearch').addEventListener('input', filterAdminTable);
+$('#adminBranchFilter').addEventListener('change', filterAdminTable);
+
+// General Listeners
 window.addEventListener('load', () => {
   setTimeout(() => $('#loader').classList.add('done'), 650);
 });
@@ -1510,14 +1559,6 @@ $('#searchInput').addEventListener('input', e => {
   renderMovies();
 });
 
-$('#adminPanelBtn').addEventListener('click', () => {
-  haptic(10);
-  playUiSound('click');
-  $('#adminUnreadDot').classList.add('hidden');
-  updateAdminMetrics();
-  openModal('adminModal');
-});
-
 $('#heroBookBtn').addEventListener('click', () => {
   haptic(15);
   playUiSound('click');
@@ -1549,7 +1590,6 @@ function init() {
   renderCinemas();
   renderComingSoon();
   renderTickets();
-  updateAdminMetrics();
   updateActiveNav();
 }
 
